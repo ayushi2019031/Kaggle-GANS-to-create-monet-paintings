@@ -35,12 +35,18 @@ class MonetDataSet(Dataset):
 Wrapper class around MonetDataset to load data with custom attributes to Pytorch's Data Loader class.
 '''
 class MonetDataLoader():
+    '''
+    Constructor to initialize the attributes.
+    '''
     def __init__(self, folder_path, transform=None, batch_size = 32, shuffle = True):
         self.folder_path = folder_path
         self.transform = transform
         self.batch_size = batch_size
         self.shuffle = shuffle
     
+    '''
+    Function to get the dataloader.
+    '''
     def get_data_loader(self):
         return DataLoader(MonetDataSet(folder_path=self.folder_path, transform=self.transform),
                           batch_size=self.batch_size,
