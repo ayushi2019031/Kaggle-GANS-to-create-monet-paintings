@@ -4,6 +4,7 @@ import torch.optim as optim
 from tqdm import tqdm 
 import os
 from torchvision.utils import save_image
+import matplotlib.pyplot as plt
 
 from generator import Generator
 from discriminator import Discriminator
@@ -72,6 +73,25 @@ optimizer_D = optim.Adam(D.parameters(), lr = LEARNING_RATE, betas = (0.5, 0.999
 # Fixed noise for saving sample images
 fixed_noise = torch.randn(32, NOISE_DIM, 1, 1).to(DEVICE)
 
+# Make a note of the losses in generator and discriminator model while training 
+# for understanding progression of GANs. 
+G_losses = []
+D_losses = []
+
+# plot losses function
+def plot_losses(G_losses, D_losses, save_path='outputs/loss_curve.png'):
+    plt.figure(figsize=(10, 5))
+    plt.plot(G_losses, label="Generator Loss", linewidth=2)
+    plt.plot(D_losses, label="Discriminator Loss", linewidth=2)
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss")
+    plt.title("Generator and Discriminator Loss During Training")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close()
+
 # ==========================================
 # Training loop
 # ==========================================
@@ -117,6 +137,9 @@ for epoch in range(EPOCHS):
         #=======logging=========
         loop.set_description(f"Epoch [{epoch+1}/{EPOCHS}]")
         loop.set_postfix(D_loss=loss_D.item(), G_loss=loss_G.item())
+        G_losses.append(loss_G.item())
+        D_losses.append(loss_D.item())
+
     
     # save sample images at every epcoh
     with torch.no_grad():
@@ -130,5 +153,56 @@ for epoch in range(EPOCHS):
         'g_optimizer': optimizer_G.state_dict(),
         'd_optimizer': optimizer_D.state_dict(),
     }, f'outputs/gan_checkpoint_{epoch+1}.pth')
+        
+plot_losses(G_losses=G_losses, D_losses=D_losses, save_path=os.path.join(SAVE_DIR, "loss_curve.png"))
 
 
+from torchmetrics.image.fid import FrechetInceptionDistance
+from torchmetrics.image.inception import InceptionScore
+
+fid = FrechetInceptionDistance(feature=2048).to(DEVICE)
+inception = InceptionScore().to(DEVICE)
+
+FID_scores = []
+IS_scores = []
+
+# Evaluate FID and IS
+with torch.no_grad():
+    fake_images = G(fixed_noise)
+    fake_images = fake_images * 0.5 + 0.5  # unnormalize to [0, 1]
+
+    # Resize to 299x299 for InceptionV3 if necessary
+    resized_fake = torch.nn.functional.interpolate(fake_images, size=(299, 299), mode='bilinear')
+
+    fid.update(real, real=True)
+    fid.update(resized_fake, real=False)
+
+    inception.update(resized_fake)
+
+    fid_score = fid.compute().item()
+    is_score, _ = inception.compute()
+    is_score = is_score.item()
+
+    FID_scores.append(fid_score)
+    IS_scores.append(is_score)
+
+    print(f"[Epoch {epoch+1}] FID: {fid_score:.2f}, IS: {is_score:.2f}")
+
+    # Reset states
+    fid.reset()
+    inception.reset()
+
+def plot_fid_is(FID_scores, IS_scores, save_path='outputs/fid_is_curve.png'):
+    plt.figure(figsize=(10, 5))
+    plt.plot(FID_scores, label="FID Score ↓", color='red', linewidth=2)
+    plt.plot(IS_scores, label="Inception Score ↑", color='green', linewidth=2)
+    plt.xlabel("Epochs")
+    plt.ylabel("Score")
+    plt.title("FID and Inception Scores During Training")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close()
+
+plot_fid_is(FID_scores, IS_scores, save_path=os.path.join(SAVE_DIR, "fid_is_curve.png"))
