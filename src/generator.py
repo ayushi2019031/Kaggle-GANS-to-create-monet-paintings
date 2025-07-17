@@ -38,8 +38,8 @@ class Generator(nn.Module):
             nn.ReLU(True),
             # Shape: N x (feature_maps//2) x 64 x 64: (number of images, feature_maps*4, [(I - 1)*S] - 2*P + K, [(I - 1)*S] - 2*P + K --- I = 32
 
-            nn.ConvTranspose2d(feature_maps, feature_maps // 4, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(feature_maps // 2),
+            nn.ConvTranspose2d(feature_maps//2, feature_maps // 4, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(feature_maps // 4),
             nn.ReLU(True),
             # Shape: N x (feature_maps//2) x 128 x 128: (number of images, feature_maps*4, [(I - 1)*S] - 2*P + K, [(I - 1)*S] - 2*P + K --- I = 64
 

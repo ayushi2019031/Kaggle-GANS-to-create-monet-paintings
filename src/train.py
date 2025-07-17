@@ -10,19 +10,35 @@ from discriminator import Discriminator
 from dataset import MonetDataSet, MonetDataLoader
 from torchvision import transforms
 
+import yaml
+import argparse
+
+## Load the config for the path mentioned. 
+def load_config(config_path="configs/default.yaml"):
+    with open(config_path, "r") as f:
+        return yaml.safe_load(f)
+
+# Parse the argument to pass in custom configs as per environment. 
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', default='configs/default.yaml', help='Path to config file')
+args = parser.parse_args()
+
+config = load_config(args.config)
+
 
 # ===========================================
 # CONFIG
 # ===========================================
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 32
-IMAGE_SIZE = 256
-NOISE_DIM = 100
-EPOCHS = 100
-LEARNING_RATE = 2e-4
-FEATURES_GEN = 64
-FEATURES_DISC = 64
-SAVE_DIR = "outputs/samples"
+BATCH_SIZE = config['training']['batch_size']
+IMAGE_SIZE = config['data']['image_size']
+NOISE_DIM = config['model']['z_dim']
+EPOCHS = config['training']['num_epochs']
+LEARNING_RATE = config['training']['learning_rate']
+FEATURES_GEN = config['model']['feature_maps_gen']
+FEATURES_DISC = config['model']['feature_maps_disc']
+SAVE_DIR = config['save']['output_dir']
+INPUT_FOLDER_PATH = config['data']['dataset_path']
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -40,6 +56,7 @@ dataLoader = MonetDataLoader(folder_path="data/gan-getting-started/monet_jpg/", 
 # ==========================================
 # Models
 # ==========================================
+
 G = Generator(noise_dim=NOISE_DIM, feature_maps=FEATURES_GEN).to(DEVICE)
 D = Discriminator(feature_maps=FEATURES_DISC).to(DEVICE)
 
@@ -47,7 +64,8 @@ D = Discriminator(feature_maps=FEATURES_DISC).to(DEVICE)
 # Loss & Optimizers
 # ==========================================
 
-criterion = torch.nn.BCELoss() # Binary cross entropy loss
+name_of_loss_criterion = {"BCE": torch.nn.BCELoss, "WassLoss": -torch.mean}
+criterion = name_of_loss_criterion["BCE"] # Binary cross entropy loss
 optimizer_G = optim.Adam(G.parameters(), lr = LEARNING_RATE, betas = (0.5, 0.999))
 optimizer_D = optim.Adam(D.parameters(), lr = LEARNING_RATE, betas = (0.5, 0.999))
 
@@ -59,6 +77,14 @@ fixed_noise = torch.randn(32, NOISE_DIM, 1, 1).to(DEVICE)
 # ==========================================
 
 for epoch in range(EPOCHS):
+
+    checkpoint_path = f"outputs/gan_checkpoint_epoch_{epoch+1}.pth"
+    if os.path.exists(checkpoint_path):
+        print(f"[Epoch {epoch+1}] Checkpoint exists. Skipping training.")
+        continue  # Skip this epoch, already done
+
+    print(f"[Epoch {epoch+1}] Starting training...")
+
     loop = tqdm(dataLoader, leave=True) # tqdm shows progress bar for loops. 
     for i, real in enumerate(loop): 
         real = real.to(DEVICE)
@@ -97,5 +123,12 @@ for epoch in range(EPOCHS):
         fake = G(fixed_noise) 
         fake = fake*0.5+ 0.5
         save_image(fake, os.path.join(SAVE_DIR, f"epoch_{epoch+1}.png"), nrow=8)
+
+        torch.save({
+        'generator': G.state_dict(),
+        'discriminator': D.state_dict(),
+        'g_optimizer': optimizer_G.state_dict(),
+        'd_optimizer': optimizer_D.state_dict(),
+    }, f'outputs/gan_checkpoint_{epoch+1}.pth')
 
 
