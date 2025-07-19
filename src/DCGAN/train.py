@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from generator import Generator
 from discriminator import Discriminator
-from dataset import MonetDataSet, MonetDataLoader
+from DCGAN.dataset import MonetDataSet, MonetDataLoader
 from torchvision import transforms
 
 import yaml

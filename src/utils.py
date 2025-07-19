@@ -67,3 +67,33 @@ def plot_losses(loss_log, title="Training Losses", xlabel="Training Steps", ylab
         plt.savefig(save_path)
     else:
         plt.show()
+
+import torch
+from torchvision.utils import save_image
+import os
+
+def save_sample_images(tensor_images, epoch, output_dir="samples", num_images=64, filename_prefix="sample"):
+    """
+    Saves a grid of generated sample images.
+
+    Args:
+        tensor_images (torch.Tensor): A batch of images, shape (B, C, H, W), range [-1, 1] or [0, 1].
+        epoch (int): The current epoch number (used for filename).
+        output_dir (str): Directory where to save images.
+        num_images (int): Number of images from the batch to save.
+        filename_prefix (str): Prefix for the filename.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Select only first `num_images`
+    tensor_images = tensor_images[:num_images]
+
+    # Rescale from [-1, 1] to [0, 1] if needed
+    if tensor_images.min() < 0:
+        tensor_images = (tensor_images + 1) / 2
+
+    save_path = os.path.join(output_dir, f"{filename_prefix}_epoch{epoch}.png")
+    save_image(tensor_images, save_path, nrow=8, normalize=False)
+    print(f"✅ Saved sample images to: {save_path}")
+
+
