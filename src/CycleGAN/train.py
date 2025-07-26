@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from generator import Generator
+from generator import Generator, UNetGenerator
 from discriminator import Discriminator
 from dataset import MonetDataLoader
 from utils import ReplayBuffer, save_sample_images  # Optional
@@ -47,8 +47,8 @@ IMAGE_SIZE = 256
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # === Models ===
-G_AB = Generator().to(DEVICE)  # Photo → Monet
-G_BA = Generator().to(DEVICE)  # Monet → Photo
+G_AB = UNetGenerator().to(DEVICE)  # Photo → Monet
+G_BA = UNetGenerator().to(DEVICE)  # Monet → Photo
 D_A = Discriminator().to(DEVICE)  # Real vs fake photo
 D_B = Discriminator().to(DEVICE)  # Real vs fake Monet
 
