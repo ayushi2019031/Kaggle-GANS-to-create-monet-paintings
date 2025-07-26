@@ -1,0 +1,23 @@
+training:
+  batch_size: 32
+  num_epochs: 100
+  learning_rate: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+
+model:
+  z_dim: 100
+  img_channels: 3
+  feature_maps_gen: 64
+  feature_maps_disc: 64
+
+data:
+  image_size: 256
+  dataset_path: "/content/data/monet_jpg"
+
+save:
+  checkpoint_interval: 10
+  output_dir: "/content/drive/MyDrive/KaggleWork/monet-paintings/outputs/"
+
+experiment:
+  loss_type: "bce"  # options: "bce", "wasserstein", "hinge", etc.

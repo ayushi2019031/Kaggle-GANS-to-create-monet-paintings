@@ -1,0 +1,5 @@
+venv/
+.DS_Store
+**/generated_images/
+**/data/
+**/checkpoints/
